@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>İnteraktif Dik Üçgen ve Kosinüs Görselleştirici</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            user-select: none;
+        }
+        .draggable-handle {
+            cursor: grab;
+            transition: r 0.2s ease, fill 0.2s ease;
+        }
+        .draggable-handle:active {
+            cursor: grabbing;
+            r: 12;
+        }
+        /* Touch safety */
+        svg {
+            touch-action: none;
+        }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col justify-between">
+
+    <!-- Header Section -->
+    <header class="bg-slate-800/80 backdrop-blur border-b border-slate-700 py-4 px-6 sticky top-0 z-10">
+        <div class="max-w-6xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-3">
+            <div class="flex items-center gap-3">
+                <div class="bg-blue-600 p-2.5 rounded-xl shadow-lg shadow-blue-500/30 text-white">
+                    <i class="fa-solid fa-shapes text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold bg-gradient-to-r from-blue-400 to-indigo-300 bg-clip-text text-transparent">
+                        İnteraktif Dik Üçgen & Kosinüs Laboratuvarı
+                    </h1>
+                    <p class="text-xs text-slate-400">Açılar değiştikçe kenar oranlarının nasıl değiştiğini canlı keşfedin</p>
+                </div>
+            </div>
+            
+            <!-- Focus Angle Selector Buttons -->
+            <div class="flex items-center bg-slate-900/80 p-1 rounded-xl border border-slate-700">
+                <button id="btnFocusAlpha" onclick="setAngleFocus('alpha')" class="flex items-center gap-2 px-4 py-1.5 rounded-lg text-sm font-semibold transition-all bg-emerald-600 text-white shadow-md">
+                    <span>α (Alfa) Açısı</span>
+                </button>
+                <button id="btnFocusBeta" onclick="setAngleFocus('beta')" class="flex items-center gap-2 px-4 py-1.5 rounded-lg text-sm font-semibold transition-all text-slate-400 hover:text-white">
+                    <span>β (Beta) Açısı</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Grid -->
+    <main class="max-w-6xl mx-auto w-full p-4 sm:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 items-start flex-grow">
+        
+        <!-- Interactive Interactive Visual Area (7 cols) -->
+        <section class="lg:col-span-7 bg-slate-800 border border-slate-700/80 rounded-2xl shadow-2xl p-4 sm:p-6 flex flex-col justify-between relative overflow-hidden">
+            <div class="flex justify-between items-center mb-2 z-10">
+                <span class="text-xs font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                    <i class="fa-solid fa-hand-pointer text-blue-400"></i> Tepedeki mavi noktayı sürükleyin veya derece kaydırıcısını kullanın
+                </span>
+                <span class="text-xs px-2.5 py-1 rounded-md bg-slate-900/80 border border-slate-700 text-indigo-300 font-mono">
+                    Dik Üçgen (90°)
+                </span>
+            </div>
+
+            <!-- SVG Container -->
+            <div class="relative w-full aspect-[4/3] bg-slate-950/70 rounded-xl border border-slate-800 flex items-center justify-center p-2">
+                <svg id="triangleSvg" viewBox="0 0 600 450" class="w-full h-full drop-shadow-md">
+                    <defs>
+                        <!-- Radial glow for active corner -->
+                        <radialGradient id="glow" cx="50%" cy="50%" r="50%">
+                            <stop offset="0%" stop-color="#3b82f6" stop-opacity="0.6"/>
+                            <stop offset="100%" stop-color="#3b82f6" stop-opacity="0"/>
+                        </radialGradient>
+                    </defs>
+
+                    <!-- Background Grid Lines -->
+                    <g opacity="0.08" stroke="#ffffff" stroke-width="1">
+                        <line x1="50" y1="50" x2="550" y2="50"/>
+                        <line x1="50" y1="150" x2="550" y2="150"/>
+                        <line x1="50" y1="250" x2="550" y2="250"/>
+                        <line x1="50" y1="350" x2="550" y2="350"/>
+                        <line x1="150" y1="50" x2="150" y2="380"/>
+                        <line x1="275" y1="50" x2="275" y2="380"/>
+                        <line x1="400" y1="50" x2="400" y2="380"/>
+                    </g>
+
+                    <!-- Right Angle Symbol (B point at 100, 370) -->
+                    <path id="rightAngleSquare" d="M 100 345 L 125 345 L 125 370" fill="none" stroke="#64748b" stroke-width="2.5"/>
+                    <circle id="rightAngleDot" cx="112.5" cy="357.5" r="2.5" fill="#64748b"/>
+
+                    <!-- Main Triangle Path -->
+                    <polygon id="trianglePoly" points="100,100 100,370 480,370" fill="rgba(30, 41, 59, 0.4)" stroke="#94a3b8" stroke-width="3" stroke-linejoin="round"/>
+
+                    <!-- Highlights for Edges -->
+                    <line id="edgeAdjacent" x1="100" y1="370" x2="480" y2="370" stroke="#10b981" stroke-width="6" stroke-linecap="round"/>
+                    <line id="edgeOpposite" x1="100" y1="100" x2="100" y2="370" stroke="#f59e0b" stroke-width="6" stroke-linecap="round"/>
+                    <line id="edgeHypotenuse" x1="100" y1="100" x2="480" y2="370" stroke="#6366f1" stroke-width="6" stroke-linecap="round"/>
+
+                    <!-- Angle Arcs -->
+                    <path id="arcAlpha" fill="rgba(16, 185, 129, 0.2)" stroke="#10b981" stroke-width="3"/>
+                    <path id="arcBeta" fill="rgba(245, 158, 11, 0.2)" stroke="#f59e0b" stroke-width="3"/>
+
+                    <!-- Text Labels for Angles inside SVG -->
+                    <text id="labelAlpha" x="0" y="0" font-size="20" font-weight="bold" fill="#10b981">α</text>
+                    <text id="labelBeta" x="0" y="0" font-size="20" font-weight="bold" fill="#f59e0b">β</text>
+                    
+                    <!-- Corner Vertices Static & Draggable -->
+                    <circle cx="100" cy="370" r="5" fill="#94a3b8"/>
+                    <circle cx="480" cy="370" r="5" fill="#94a3b8"/>
+                    <circle id="dragHandle" cx="100" cy="100" r="9" fill="#3b82f6" stroke="#ffffff" stroke-width="3" class="draggable-handle"/>
+
+                    <!-- Side Length Measurement Labels (Dynamic SVG Overlay) -->
+                    <!-- Hypotenuse label -->
+                    <g id="groupHypLabel" transform="translate(0,0)">
+                        <rect x="-45" y="-14" width="90" height="26" rx="6" fill="#1e1b4b" stroke="#6366f1" stroke-width="1.5"/>
+                        <text id="txtHyp" x="0" y="4" font-size="12" font-weight="bold" fill="#c7d2fe" text-anchor="middle">5.00 cm</text>
+                    </g>
+
+                    <!-- Bottom Edge label -->
+                    <g id="groupBottomLabel" transform="translate(0,0)">
+                        <rect x="-45" y="10" width="90" height="26" rx="6" fill="#064e3b" stroke="#10b981" stroke-width="1.5"/>
+                        <text id="txtBottom" x="0" y="27" font-size="12" font-weight="bold" fill="#a7f3d0" text-anchor="middle">4.00 cm</text>
+                    </g>
+
+                    <!-- Vertical Edge label -->
+                    <g id="groupVertLabel" transform="translate(0,0)">
+                        <rect x="-95" y="-13" width="90" height="26" rx="6" fill="#451a03" stroke="#f59e0b" stroke-width="1.5"/>
+                        <text id="txtVert" x="-50" y="4" font-size="12" font-weight="bold" fill="#fde68a" text-anchor="middle">3.00 cm</text>
+                    </g>
+                </svg>
+            </div>
+
+            <!-- Controls bar -->
+            <div class="mt-4 bg-slate-900/90 p-4 rounded-xl border border-slate-700/80 flex flex-col gap-3">
+                <div class="flex justify-between items-center text-sm">
+                    <label for="angleSlider" class="font-medium text-slate-300 flex items-center gap-2">
+                        <i class="fa-solid fa-sliders text-blue-400"></i> <span id="sliderAngleName">α (Alfa) Açısını Ayarla</span>:
+                    </label>
+                    <span id="sliderAngleVal" class="font-mono text-lg font-bold text-emerald-400 bg-slate-800 px-3 py-0.5 rounded-lg border border-slate-700">36.9°</span>
+                </div>
+                <input type="range" id="angleSlider" min="5" max="85" value="36.87" step="0.1"
+                       class="w-full h-2.5 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-blue-500">
+                <div class="flex justify-between text-[11px] text-slate-500 font-mono">
+                    <span>5° (Dar Açı)</span>
+                    <span>45° (Eşit Dik Kenar)</span>
+                    <span>85° (Geniş Dik Açı)</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Dynamic Calculation & Concept Panel (5 cols) -->
+        <section class="lg:col-span-5 flex flex-col gap-6">
+
+            <!-- Active Angle Values Summary -->
+            <div class="bg-slate-800 border border-slate-700/80 rounded-2xl p-5 shadow-xl">
+                <h2 class="text-base font-bold text-slate-200 mb-4 flex items-center gap-2 border-b border-slate-700 pb-3">
+                    <i class="fa-solid fa-calculator text-indigo-400"></i> Kenar & Açı Değerleri
+                </h2>
+
+                <div class="grid grid-cols-3 gap-2 text-center font-mono">
+                    <div class="bg-slate-900/70 p-3 rounded-xl border border-emerald-500/30">
+                        <div class="text-[11px] font-sans font-semibold text-emerald-400 mb-1" id="badgeAdjRole">Komşu Kenar</div>
+                        <div id="valAdj" class="text-lg font-bold text-emerald-300">4.00</div>
+                    </div>
+                    <div class="bg-slate-900/70 p-3 rounded-xl border border-amber-500/30">
+                        <div class="text-[11px] font-sans font-semibold text-amber-400 mb-1" id="badgeOppRole">Karşı Kenar</div>
+                        <div id="valOpp" class="text-lg font-bold text-amber-300">3.00</div>
+                    </div>
+                    <div class="bg-slate-900/70 p-3 rounded-xl border border-indigo-500/30">
+                        <div class="text-[11px] font-sans font-semibold text-indigo-400 mb-1">Hipotenüs</div>
+                        <div id="valHyp" class="text-lg font-bold text-indigo-300">5.00</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Mathematical Formula Box -->
+            <div class="bg-slate-800 border border-slate-700/80 rounded-2xl p-5 shadow-xl flex flex-col gap-4">
+                <div class="flex justify-between items-center border-b border-slate-700 pb-3">
+                    <h3 class="text-base font-bold text-slate-200 flex items-center gap-2">
+                        <i class="fa-solid fa-divide text-emerald-400"></i> 
+                        <span id="ratioTitle">Kosinüs Hesabı (cos α)</span>
+                    </h3>
+                    <span class="text-xs bg-emerald-950 text-emerald-300 border border-emerald-700/50 px-2.5 py-1 rounded-full font-semibold">
+                        Formül: Komşu / Hipotenüs
+                    </span>
+                </div>
+
+                <!-- Main Cosine Formula Calculation -->
+                <div class="bg-slate-950/80 p-4 rounded-xl border border-slate-700 flex items-center justify-center gap-3">
+                    <div class="text-right">
+                        <span id="formulaCosName" class="text-lg font-bold text-emerald-400 font-mono">cos(36.9°)</span>
+                    </div>
+                    <div class="text-slate-400 text-xl font-bold">=</div>
+                    <!-- Fraction -->
+                    <div class="flex flex-col items-center">
+                        <span id="fracAdj" class="text-emerald-300 font-mono font-bold px-2 border-b border-slate-500 text-base">4.00</span>
+                        <span id="fracHyp" class="text-indigo-300 font-mono font-bold px-2 text-base">5.00</span>
+                    </div>
+                    <div class="text-slate-400 text-xl font-bold">=</div>
+                    <div class="bg-slate-900 px-3 py-1.5 rounded-lg border border-emerald-500/50">
+                        <span id="resCos" class="text-2xl font-black text-emerald-400 font-mono">0.800</span>
+                    </div>
+                </div>
+
+                <!-- Secondary Trigonometric Ratios (Sine & Tan collapsed) -->
+                <div class="grid grid-cols-2 gap-3 text-xs font-mono">
+                    <div class="bg-slate-900/60 p-2.5 rounded-lg border border-slate-700/60 flex justify-between items-center">
+                        <span class="text-slate-400">sin(<span class="activeAngleSymbol">α</span>) = Karşı / Hip</span>
+                        <span id="resSin" class="font-bold text-amber-300 text-sm">0.600</span>
+                    </div>
+                    <div class="bg-slate-900/60 p-2.5 rounded-lg border border-slate-700/60 flex justify-between items-center">
+                        <span class="text-slate-400">tan(<span class="activeAngleSymbol">α</span>) = Karşı / Komş</span>
+                        <span id="resTan" class="font-bold text-sky-300 text-sm">0.750</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Dynamic Educational Insight Box -->
+            <div class="bg-gradient-to-br from-slate-800 to-indigo-950/40 border border-indigo-500/30 rounded-2xl p-5 shadow-xl">
+                <h3 class="text-sm font-bold text-indigo-300 uppercase tracking-wider mb-2 flex items-center gap-2">
+                    <i class="fa-solid fa-lightbulb text-amber-400"></i> Ne Oluyor? Mantık Açıklaması
+                </h3>
+                <p id="insightText" class="text-sm text-slate-300 leading-relaxed">
+                    Açı değiştikçe üçgenin bükülme miktarı değişir. Komşu kenar hipotenüse yaklaştıkça kosinüs oranı 1'e yaklaşır.
+                </p>
+            </div>
+
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-slate-950 border-t border-slate-800 py-3 text-center text-xs text-slate-500">
+        Etkileşimli Matematik Rehberi &bull; Kosinüs Kavramı Görselleştirmesi
+    </footer>
+
+    <!-- Interactive Logic Script -->
+    <script>
+        // State variables
+        let focusAngle = 'alpha'; // 'alpha' or 'beta'
+        let currentAlpha = 36.87; // degrees (3-4-5 standard triangle)
+        const hypLength = 5.0;   // hypotenuse locked to 5 units for clarity
+
+        // SVG Canvas Coordinates & Scaling
+        // Right angle B fixed at (100, 370)
+        // Vertex C (bottom right) fixed at (480, 370) -> Base length = 380px in SVG
+        const bx = 100, by = 370;
+        const cx = 480, cy = 370;
+        const basePxLength = 380; // 380px corresponds to adjacent side when alpha is near 0
+
+        // Dragging state
+        let isDragging = false;
+        const svg = document.getElementById('triangleSvg');
+        const dragHandle = document.getElementById('dragHandle');
+        const angleSlider = document.getElementById('angleSlider');
+
+        // DOM elements
+        const trianglePoly = document.getElementById('trianglePoly');
+        const edgeAdjacent = document.getElementById('edgeAdjacent');
+        const edgeOpposite = document.getElementById('edgeOpposite');
+        const edgeHypotenuse = document.getElementById('edgeHypotenuse');
+        
+        const arcAlpha = document.getElementById('arcAlpha');
+        const arcBeta = document.getElementById('arcBeta');
+        const labelAlpha = document.getElementById('labelAlpha');
+        const labelBeta = document.getElementById('labelBeta');
+
+        const groupHypLabel = document.getElementById('groupHypLabel');
+        const groupBottomLabel = document.getElementById('groupBottomLabel');
+        const groupVertLabel = document.getElementById('groupVertLabel');
+        const txtHyp = document.getElementById('txtHyp');
+        const txtBottom = document.getElementById('txtBottom');
+        const txtVert = document.getElementById('txtVert');
+
+        // Text & Calculation Elements
+        const sliderAngleVal = document.getElementById('sliderAngleVal');
+        const sliderAngleName = document.getElementById('sliderAngleName');
+        const badgeAdjRole = document.getElementById('badgeAdjRole');
+        const badgeOppRole = document.getElementById('badgeOppRole');
+        const valAdj = document.getElementById('valAdj');
+        const valOpp = document.getElementById('valOpp');
+        const valHyp = document.getElementById('valHyp');
+        
+        const ratioTitle = document.getElementById('ratioTitle');
+        const formulaCosName = document.getElementById('formulaCosName');
+        const fracAdj = document.getElementById('fracAdj');
+        const fracHyp = document.getElementById('fracHyp');
+        const resCos = document.getElementById('resCos');
+        const resSin = document.getElementById('resSin');
+        const resTan = document.getElementById('resTan');
+        const insightText = document.getElementById('insightText');
+        const activeAngleSymbols = document.querySelectorAll('.activeAngleSymbol');
+
+        // Switch focus between Alpha and Beta
+        function setAngleFocus(target) {
+            focusAngle = target;
+            const btnAlpha = document.getElementById('btnFocusAlpha');
+            const btnBeta = document.getElementById('btnFocusBeta');
+
+            if (focusAngle === 'alpha') {
+                btnAlpha.className = "flex items-center gap-2 px-4 py-1.5 rounded-lg text-sm font-semibold transition-all bg-emerald-600 text-white shadow-md";
+                btnBeta.className = "flex items-center gap-2 px-4 py-1.5 rounded-lg text-sm font-semibold transition-all text-slate-400 hover:text-white";
+                sliderAngleName.innerText = "α (Alfa) Açısını Ayarla";
+            } else {
+                btnBeta.className = "flex items-center gap-2 px-4 py-1.5 rounded-lg text-sm font-semibold transition-all bg-amber-600 text-white shadow-md";
+                btnAlpha.className = "flex items-center gap-2 px-4 py-1.5 rounded-lg text-sm font-semibold transition-all text-slate-400 hover:text-white";
+                sliderAngleName.innerText = "β (Beta) Açısını Ayarla";
+            }
+
+            activeAngleSymbols.forEach(el => el.innerText = focusAngle === 'alpha' ? 'α' : 'β');
+            updateTriangle();
+        }
+
+        // Convert Degrees to Radians
+        function toRad(deg) {
+            return (deg * Math.PI) / 180;
+        }
+
+        // Update core calculations & geometry
+        function updateTriangle() {
+            // Ensure alpha is within boundaries (5° to 85°)
+            currentAlpha = Math.max(5, Math.min(85, currentAlpha));
+            const beta = 90 - currentAlpha;
+
+            // Update Slider UI
+            if (focusAngle === 'alpha') {
+                angleSlider.value = currentAlpha.toFixed(1);
+                sliderAngleVal.innerText = `${currentAlpha.toFixed(1)}°`;
+            } else {
+                angleSlider.value = beta.toFixed(1);
+                sliderAngleVal.innerText = `${beta.toFixed(1)}°`;
+            }
+
+            // Calculate vertex A (top vertex) coordinates
+            // Base BC distance = 380px. A is at (100, ay)
+            // tan(alpha) = AB / BC = (by - ay) / basePxLength
+            const alphaRad = toRad(currentAlpha);
+            const heightPx = basePxLength * Math.tan(alphaRad);
+            const ay = by - heightPx;
+            const ax = bx; // Right angled at B (100)
+
+            // Update Triangle Polygon
+            trianglePoly.setAttribute('points', `${ax},${ay} ${bx},${by} ${cx},${cy}`);
+
+            // Update Drag Handle Point
+            dragHandle.setAttribute('cx', ax);
+            dragHandle.setAttribute('cy', ay);
+
+            // Update Highlighted Edges
+            edgeAdjacent.setAttribute('x1', bx); edgeAdjacent.setAttribute('y1', by);
+            edgeAdjacent.setAttribute('x2', cx); edgeAdjacent.setAttribute('y2', cy);
+
+            edgeOpposite.setAttribute('x1', ax); edgeOpposite.setAttribute('y1', ay);
+            edgeOpposite.setAttribute('x2', bx); edgeOpposite.setAttribute('y2', by);
+
+            edgeHypotenuse.setAttribute('x1', ax); edgeHypotenuse.setAttribute('y1', ay);
+            edgeHypotenuse.setAttribute('x2', cx); edgeHypotenuse.setAttribute('y2', cy);
+
+            // Calculate Sides in Units (Setting Hypotenuse or Base relative scaling)
+            // Let bottom side = 4.0 when alpha ~ 36.87°
+            // Scaled lengths:
+            const bottomUnits = 4.0;
+            const vertUnits = bottomUnits * Math.tan(alphaRad);
+            const hypUnits = Math.sqrt(bottomUnits * bottomUnits + vertUnits * vertUnits);
+
+            // Angle Arcs drawing
+            // Alpha Arc at C (480, 370)
+            const arcR = 50;
+            const startAngleA = Math.PI; // 180 deg
+            const endAngleA = Math.PI + alphaRad; // Sweep up
+            const ax1 = cx - arcR;
+            const ay1 = cy;
+            const ax2 = cx - arcR * Math.cos(alphaRad);
+            const ay2 = cy - arcR * Math.sin(alphaRad);
+            arcAlpha.setAttribute('d', `M ${cx} ${cy} L ${ax1} ${ay1} A ${arcR} ${arcR} 0 0 1 ${ax2} ${ay2} Z`);
+            labelAlpha.setAttribute('x', cx - arcR - 15);
+            labelAlpha.setAttribute('y', cy - 12);
+
+            // Beta Arc at A (100, ay)
+            const betaRad = toRad(beta);
+            const bx1 = ax;
+            const by1 = ay + arcR;
+            const bx2 = ax + arcR * Math.sin(betaRad);
+            const by2 = ay + arcR * Math.cos(betaRad);
+            arcBeta.setAttribute('d', `M ${ax} ${ay} L ${bx1} ${by1} A ${arcR} ${arcR} 0 0 0 ${bx2} ${by2} Z`);
+            labelBeta.setAttribute('x', ax + 15);
+            labelBeta.setAttribute('y', ay + arcR + 5);
+
+            // Labels Positions & Text
+            txtHyp.innerText = `${hypUnits.toFixed(2)} cm`;
+            txtBottom.innerText = `${bottomUnits.toFixed(2)} cm`;
+            txtVert.innerText = `${vertUnits.toFixed(2)} cm`;
+
+            // Position Hypotenuse label along hypotenuse midpoint
+            const midHypX = (ax + cx) / 2;
+            const midHypY = (ay + cy) / 2;
+            const angleDegEig = - (currentAlpha * 0.7); // slight tilt
+            groupHypLabel.setAttribute('transform', `translate(${midHypX}, ${midHypY}) rotate(${angleDegEig})`);
+            groupBottomLabel.setAttribute('transform', `translate(${(bx + cx) / 2}, ${by})`);
+            groupVertLabel.setAttribute('transform', `translate(${bx}, ${(ay + by) / 2})`);
+
+            // Contextual Role Assignment based on selected focus angle
+            let adjacentVal, oppositeVal;
+            if (focusAngle === 'alpha') {
+                adjacentVal = bottomUnits;
+                oppositeVal = vertUnits;
+                badgeAdjRole.innerText = "Komşu Kenar (Alt)";
+                badgeOppRole.innerText = "Karşı Kenar (Sol)";
+                edgeAdjacent.setAttribute('stroke', '#10b981'); // Emerald
+                edgeOpposite.setAttribute('stroke', '#f59e0b');  // Amber
+            } else {
+                adjacentVal = vertUnits;
+                oppositeVal = bottomUnits;
+                badgeAdjRole.innerText = "Komşu Kenar (Sol)";
+                badgeOppRole.innerText = "Karşı Kenar (Alt)";
+                edgeAdjacent.setAttribute('stroke', '#f59e0b');
+                edgeOpposite.setAttribute('stroke', '#10b981');
+            }
+
+            // Calculations
+            const cosVal = adjacentVal / hypUnits;
+            const sinVal = oppositeVal / hypUnits;
+            const tanVal = oppositeVal / adjacentVal;
+
+            valAdj.innerText = adjacentVal.toFixed(2);
+            valOpp.innerText = oppositeVal.toFixed(2);
+            valHyp.innerText = hypUnits.toFixed(2);
+
+            // Formula card update
+            const activeAngleDeg = focusAngle === 'alpha' ? currentAlpha : beta;
+            const symbol = focusAngle === 'alpha' ? 'α' : 'β';
+            
+            ratioTitle.innerText = `Kosinüs Hesabı (cos ${symbol})`;
+            formulaCosName.innerText = `cos(${activeAngleDeg.toFixed(1)}°)`;
+            fracAdj.innerText = adjacentVal.toFixed(2);
+            fracHyp.innerText = hypUnits.toFixed(2);
+            resCos.innerText = cosVal.toFixed(3);
+
+            resSin.innerText = sinVal.toFixed(3);
+            resTan.innerText = tanVal.toFixed(3);
+
+            // Dynamic Intuitive Explanations
+            updateInsightText(symbol, activeAngleDeg, cosVal, adjacentVal, hypUnits);
+        }
+
+        // Explanatory text logic
+        function updateInsightText(symbol, angle, cosVal, adj, hyp) {
+            let text = "";
+
+            if (angle < 20) {
+                text = `<strong>${symbol} açısı çok küçüldü (${angle.toFixed(1)}°):</strong> Komşu kenar, hipotenüse neredeyse eşit uzunluğa geldi. Bu yüzden bölme sonucu 1'e çok yakın: <strong>cos(${symbol}) = ${cosVal.toFixed(3)} ≈ 1</strong>.`;
+            } else if (angle > 70) {
+                text = `<strong>${symbol} açısı çok büyüdü (${angle.toFixed(1)}°):</strong> Dik kenar yükseldikçe komşu kenar iyice kısaldı. Kısa kenarın hipotenüse oranı sıfıra yaklaştı: <strong>cos(${symbol}) = ${cosVal.toFixed(3)} ≈ 0</strong>.`;
+            } else if (Math.abs(angle - 45) < 3) {
+                text = `<strong>${symbol} açısı yaklaşık 45°:</strong> Dik kenarlar birbirine tam eşittir! Kosinüs değeri <strong>cos(45°) ≈ 0.707</strong> olarak hesaplanır.`;
+            } else if (Math.abs(angle - 36.87) < 2) {
+                text = `<strong>Meşhur 3 - 4 - 5 Üçgeni:</strong> Komşu kenar 4 cm, Hipotenüs 5 cm'dir. Kosinüs oranı tam olarak <strong>4 / 5 = 0.800</strong> çıkar.`;
+            } else {
+                text = `<strong>${symbol} = ${angle.toFixed(1)}° iken:</strong> Komşu kenarın uzunluğu (${adj.toFixed(2)} cm), hipotenüsün (${hyp.toFixed(2)} cm) tam olarak %${(cosVal * 100).toFixed(1)} kadarıdır. <strong>cos(${symbol}) = ${cosVal.toFixed(3)}</strong>.`;
+            }
+
+            insightText.innerHTML = text;
+        }
+
+        // Event Listeners for Interaction
+
+        // 1. Slider change
+        angleSlider.addEventListener('input', (e) => {
+            const val = parseFloat(e.target.value);
+            if (focusAngle === 'alpha') {
+                currentAlpha = val;
+            } else {
+                currentAlpha = 90 - val;
+            }
+            updateTriangle();
+        });
+
+        // 2. SVG Point Mouse Dragging logic
+        function getSvgCoordinates(e) {
+            const pt = svg.createSVGPoint();
+            pt.x = e.clientX || (e.touches && e.touches[0].clientX);
+            pt.y = e.clientY || (e.touches && e.touches[0].clientY);
+            return pt.matrixTransform(svg.getScreenCTM().inverse());
+        }
+
+        function handleDragStart(e) {
+            isDragging = true;
+            dragHandle.style.fill = "#60a5fa";
+        }
+
+        function handleDragMove(e) {
+            if (!isDragging) return;
+            e.preventDefault();
+            const coords = getSvgCoordinates(e);
+
+            // Calculate new alpha from y coordinate relative to bottom C (480, 370)
+            const dy = Math.max(20, Math.min(350, by - coords.y));
+            // dy / basePxLength = tan(alpha)
+            const newAlphaRad = Math.atan(dy / basePxLength);
+            currentAlpha = (newAlphaRad * 180) / Math.PI;
+
+            updateTriangle();
+        }
+
+        function handleDragEnd() {
+            if (isDragging) {
+                isDragging = false;
+                dragHandle.style.fill = "#3b82f6";
+            }
+        }
+
+        // Event Binds
+        dragHandle.addEventListener('mousedown', handleDragStart);
+        window.addEventListener('mousemove', handleDragMove);
+        window.addEventListener('mouseup', handleDragEnd);
+
+        dragHandle.addEventListener('touchstart', handleDragStart, { passive: false });
+        window.addEventListener('touchmove', handleDragMove, { passive: false });
+        window.addEventListener('touchend', handleDragEnd);
+
+        // Initial setup on load
+        window.onload = function() {
+            updateTriangle();
+        };
+    </script>
+</body>
+</html>
